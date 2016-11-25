@@ -1,3 +1,8 @@
+// Work by Lin, Tzu-Heng
+// W42, 2014011054
+// Dept. of Electronic Engineering, Tsinghua University
+// DSP Course Work
+
 # include <fstream>
 # include <string>
 # include <stdio.h>

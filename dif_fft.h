@@ -3,7 +3,6 @@
 // Dept. of Electronic Engineering, Tsinghua University
 // DSP Course Work
 
-
 complex* DIF_FFT_reordered(complex input_seq[], int N);
 complex* DIF_FFT(complex input_seq[], int N, complex WN[], int recur_time_count);
 
