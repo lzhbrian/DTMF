@@ -40,8 +40,6 @@ int main()
     	char hhh[MAX_STR_LEN];
     	strcpy(hhh, dir_name);
     	strcat(hhh, (filename->d_name));
-        // ifstream in("./txtData1/data1081.txt");
-        cout << hhh <<endl;
 		ifstream in( hhh );
 		string filename;
 		string line;
@@ -91,18 +89,8 @@ int main()
 				input_seq[count + i].im = 0;
 			}
 
-
 			// FFT
 			complex* output_seq = DIF_FFT_reordered(input_seq, total_length);
-
-
-			// output result for validation
-			cout << endl;
-			// for (int i = 0; i < total_length; i++)
-			// {
-			// 	cout << "\tX[" << i << "] = " << output_seq[i].re << " + j*" << output_seq[i].im << endl;
-			// }
-
 
 			// Amp, Find max 1,2 and their positions
 			int amp;
@@ -116,15 +104,18 @@ int main()
 				if (amp > max2)
 				{
 					if (amp > max1) {
+						// max2 = max1
+						max2 = max1;
+						max2_pos = max1_pos;
+						// max1 = new
 						max1 = amp;
-						max1_pos = i;	
+						max1_pos = i;
 					} else {
 						max2 = amp;
 						max2_pos = i;
 					}
 				}
 			}
-
 
 			// x-axis
 				// 0:f_s/(N-1):f_s
@@ -137,6 +128,7 @@ int main()
 				x_axis[i] = i * step;
 			}
 
+			// Get max1, max2 freq
 			cout << "Max1 pos:" << x_axis[max1_pos] << endl;
 			cout << "Max2 pos:" << x_axis[max2_pos] << endl;
 
@@ -144,6 +136,7 @@ int main()
 			char output_symbol = find_dtmf_symbol(x_axis[max1_pos], x_axis[max2_pos]);
 			cout << "The symbol for this sound: " << output_symbol << endl;
 
+			cout << endl;
 
 		} else { // fail reading file
 			cout << "no such file" << endl;

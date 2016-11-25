@@ -60,6 +60,16 @@ complex ReverseComplex(complex c)
 	return c;
 }
 
+// scalar mul
+complex ComplexScalarMul(complex cc, double con)
+{
+	complex r;
+	
+	r.re = cc.re * con;
+	r.im = cc.im * con;
+
+	return r;
+}
 
 // Other func
 
@@ -82,7 +92,7 @@ complex* append_seq(complex seq_1[], complex seq_2[], int N) {
 // Reorder the input_seq to an order
 complex* reorder_seq(complex input_seq[], int N) {
 
-	cout << "Reorder the sequence ... \t";
+	cout << "Reorder the sequence ..." << endl;
 
 	complex* reordered_seq = new complex[N];
 	for (int i = 0; i < N; ++i)
@@ -120,7 +130,7 @@ int reverse_bit(int value, int N) {
 // Calc WN[], with N = input_N
 complex* Calc_WN(int N) {
 
-	cout << "Calculating WN[] of N = " << N << " ... \t";
+	cout << "Calculating WN[] of N = " << N << " ..." << endl;
 	complex* WN = new complex[N];
 
 	complex WN_unit; WN_unit.re = cos(2*PI/N); WN_unit.im = -sin(2*PI/N);
