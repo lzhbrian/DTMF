@@ -1,0 +1,128 @@
+\documentclass[UTF8,a4paper,twocolumn]{ctexart}
+% \pagestyle{empty}
+% \documentclass[a4paper]{article}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subfigure}
+\usepackage{CJK}
+
+\usepackage{lastpage}
+\usepackage{titlesec}   %设置页眉页脚的宏包
+\newpagestyle{main}{            
+    \sethead{无42 林子恒 2014011054}{DSP --- DTMF}{page \thepage\ of \pageref{LastPage}}     %设置页眉
+    %\setfoot{左页脚}{中页脚}{右页脚}      %设置页脚，可以在页脚添加 \thepage  显示页数
+    \headrule                                      % 添加页眉的下划线
+    \footrule                                       %添加页脚的下划线
+}
+\pagestyle{main}    %使用该style
+
+\usepackage{times}
+\usepackage{fancybox}
+\usepackage{xcolor}
+\usepackage{listings}
+\lstset{breaklines}
+\lstset{                        %Settings for listings package.
+	language=matlab,
+         numbers=left,
+         numberstyle=\tiny,
+         basicstyle=\tiny\ttfamily,
+         stringstyle=\color{purple},
+         keywordstyle=\color{purple}\bfseries,
+         commentstyle=\color{olive},
+       %directivestyle=\color{blue},
+         frame=shadowbox,
+         showspaces=false,
+       %framerule=0pt,
+       %backgroundcolor=\color{pink},
+         rulesepcolor=\color{red!20!green!20!blue!20},
+         tabsize=4,
+      %rulesepcolor=\color{brown}
+      %xleftmargin=5em, xrightmargin=5em, aboveskip=1em
+}
+\geometry{left=1cm, right=1cm, top=2cm, bottom=2cm}
+
+  \author{无42 林子恒 2014011054} 
+  \title{DSP 2nd Project --- DTMF Detection}
+  \date{2016.11.25}
+
+\CTEXsetup[format={\Large\bfseries}]{section}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+  \maketitle
+  \thispagestyle{empty}
+	See my Github Repository for more infomation:
+	
+	https://github.com/lzhbrian/DTMF
+
+\tableofcontents
+
+\section*{File Structure}
+
+\begin{enumerate}
+
+\item DTMF\_1.cpp --- Main function for problem 1
+\item DTMF\_2.cpp --- Main function for problem 2
+\item DTMF\_3.cpp --- Main function for problem 3
+\item complex.h 
+\item dif\_fft.h --- FFT implementation
+\item goertzel.h --- Goertzel implementation
+\item find\_dtmf\_symbol.h --- judge signals
+\item read\_wav.m --- Convert .wav files to .txt
+
+\end{enumerate}
+
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Problem}
+要求利用FFT, Goertzel算法，对给定音频文件中的双音多频信号进行检测和识别。
+
+\begin{enumerate}
+
+\item 下载附件包中第一小题的 10 个长度不一的音频文件，利用第一次课程设计 中编写的 FFT 程序对这 10 个文件中的 DTMF 信号进行频谱分析，最后给出 10 个文件 所对应的真实数字。
+\item 编写 Goertzel 算法的 C/C++语言程序，完成（1）中的要求。
+\item 下载附件包中第二小题的一个长音频文件，文件中包含了一串 DTMF 信号， 每个双音多频信号之间的时间间隔不一，对本串 DTMF 信号进行识别。
+
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Solution}
+
+
+
+\subsection{Realization of DTMF using FFT}
+This part is explained in the previous report. See https://github.com/lzhbrian/Fast-Fourier-Transform for more information.
+
+
+\subsection{Realization of DTMF using Goertzel}
+
+\subsection{Read the .wav files --- Convert to .txt}
+
+\subsection{Recognition of Dataset 1 --- 10 signals}
+	
+	\subsubsection{FFT}
+	
+	\subsubsection{Goertzel}
+
+
+\subsection{Recognition of Dataset 2 --- A long signal}
+
+	\subsubsection{Judge the start-end time}
+
+
+\end{document}
+
+
+
+
+
+
+
+
