@@ -1,0 +1,32 @@
+%!TEX root = dsp_2nd_program_hw.tex
+
+\subsection{Realization of DTMF using FFT --- dif\_fft.h}
+This part is explained in the previous report. 
+The code is shown in section~\ref{code:fft}
+
+See https://github.com/lzhbrian/Fast-Fourier-Transform for more information. 
+
+\subsection{Realization of DTMF using Goertzel --- goertzel.h}
+Goertzel algorithm is a method by which we can only calculate the amplitude of certain frequency.
+By the following functions, We can obtain the $X[k]$ we want:
+\begin{equation}\label{equation:iter}
+v_{k}[n] = x[n] + 2cos(\omega_{k})v_{k}[n-1]-v_{k}[n-2]
+\end{equation}
+\begin{equation}\label{equation:xk_calc}
+X[k] = v_{k}[N-1] - W^{k}_{N}v_{k}[N-2]
+\end{equation}
+where 
+$$\omega_{k} = 2\pi k/N, W_{N}=e^{2\pi /N}, v_{k}[-2]=v_{k}[-1]=0, v_{k}[0]=x[0]$$
+
+In this DTMF detection, we want to acquire the amplitude of 
+$$697Hz, 770Hz, 852Hz, 941Hz, 1209Hz, 1336Hz, 1477Hz, 1633Hz$$
+Note that we get the $k$ for each frequency by the following equation:
+\begin{equation}
+k = ( N * f ) / SamplingRate;
+\end{equation}
+where $N$ is the length of the sequence, and f is the targeted frequency.
+
+So we first iteratively calculate the value of $v_{k}[N-1]$ and $v_{k}[N-2]$ using equation~(\ref{equation:iter}), then we use them to get the value of X[k] by equation~(\ref{equation:xk_calc}).
+In the real practice, we further return the amplitude of X[k] by calculating their sum of squares.
+
+The code is shown in section~\ref{code:goertzel}

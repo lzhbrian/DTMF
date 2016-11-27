@@ -1,4 +1,4 @@
-\documentclass[UTF8,a4paper,twocolumn]{ctexart}
+\documentclass[UTF8,a4paper]{ctexart}
 % \pagestyle{empty}
 % \documentclass[a4paper]{article}
 \usepackage{amssymb}
@@ -8,14 +8,17 @@
 \usepackage{float}
 \usepackage{subfigure}
 \usepackage{CJK}
+\usepackage{caption}
+
 
 \usepackage{lastpage}
 \usepackage{titlesec}   %设置页眉页脚的宏包
 \newpagestyle{main}{            
-    \sethead{无42 林子恒 2014011054}{DSP --- DTMF}{page \thepage\ of \pageref{LastPage}}     %设置页眉
+    \sethead{无42 林子恒 2014011054}{DSP --- DTMF}{page \thepage\ of \pageref{LastPage}}  
+    %设置页眉
     %\setfoot{左页脚}{中页脚}{右页脚}      %设置页脚，可以在页脚添加 \thepage  显示页数
     \headrule                                      % 添加页眉的下划线
-    \footrule                                       %添加页脚的下划线
+    \footrule                                      % 添加页脚的下划线
 }
 \pagestyle{main}    %使用该style
 
@@ -24,15 +27,16 @@
 \usepackage{xcolor}
 \usepackage{listings}
 \lstset{breaklines}
+\lstset{language=C++}
 \lstset{                        %Settings for listings package.
-	language=matlab,
-         numbers=left,
+  language=[ANSI]{C++},
+         % numbers=left,
          numberstyle=\tiny,
-         basicstyle=\tiny\ttfamily,
+         basicstyle=\small\ttfamily,
          stringstyle=\color{purple},
-         keywordstyle=\color{purple}\bfseries,
+         keywordstyle=\color{blue}\bfseries,
          commentstyle=\color{olive},
-       %directivestyle=\color{blue},
+         directivestyle=\color{blue},
          frame=shadowbox,
          showspaces=false,
        %framerule=0pt,
@@ -40,16 +44,19 @@
          rulesepcolor=\color{red!20!green!20!blue!20},
          tabsize=4,
       %rulesepcolor=\color{brown}
-      %xleftmargin=5em, xrightmargin=5em, aboveskip=1em
+         xleftmargin=3em, xrightmargin=3em, aboveskip=1em
 }
-\geometry{left=1cm, right=1cm, top=2cm, bottom=2cm}
+
+
+\geometry{left=1.5cm, right=1.5cm, top=2cm, bottom=2cm}
 
   \author{无42 林子恒 2014011054} 
   \title{DSP 2nd Project --- DTMF Detection}
   \date{2016.11.25}
 
 \CTEXsetup[format={\Large\bfseries}]{section}
-
+\renewcommand{\figurename}{Figure}
+\renewcommand{\tablename}{Table}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
@@ -60,21 +67,6 @@
 	https://github.com/lzhbrian/DTMF
 
 \tableofcontents
-
-\section*{File Structure}
-
-\begin{enumerate}
-
-\item DTMF\_1.cpp --- Main function for problem 1
-\item DTMF\_2.cpp --- Main function for problem 2
-\item DTMF\_3.cpp --- Main function for problem 3
-\item complex.h 
-\item dif\_fft.h --- FFT implementation
-\item goertzel.h --- Goertzel implementation
-\item find\_dtmf\_symbol.h --- judge signals
-\item read\_wav.m --- Convert .wav files to .txt
-
-\end{enumerate}
 
 \newpage
 
@@ -96,26 +88,20 @@
 \section{Solution}
 
 
+\subsection{Read the .wav files --- read\_wav.m}
 
-\subsection{Realization of DTMF using FFT}
-This part is explained in the previous report. See https://github.com/lzhbrian/Fast-Fourier-Transform for more information.
+We use a Matlab audioread() function to convert the .wav file to .txt file, extracting the time-zone signals. Saving .txt files to ./txtData1 and ./txtData2.
 
-
-\subsection{Realization of DTMF using Goertzel}
-
-\subsection{Read the .wav files --- Convert to .txt}
-
-\subsection{Recognition of Dataset 1 --- 10 signals}
-	
-	\subsubsection{FFT}
-	
-	\subsubsection{Goertzel}
+The code is shown in section~\ref{code:readwav}
 
 
-\subsection{Recognition of Dataset 2 --- A long signal}
+\input{algorithm}
 
-	\subsubsection{Judge the start-end time}
+\input{result}
 
+\newpage
+
+\input{code}
 
 \end{document}
 

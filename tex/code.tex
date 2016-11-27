@@ -1,0 +1,872 @@
+%!TEX root = dsp_2nd_program_hw.tex
+
+\section{Code}
+
+
+\subsection{DTMF\_1.cpp --- Main function for problem 1}\label{dtmf1}
+\begin{lstlisting}
+// Work by Lin, Tzu-Heng
+// W42, 2014011054
+// Dept. of Electronic Engineering, Tsinghua University
+// DSP Course Work
+
+# include <fstream>
+# include <string>
+# include <stdio.h>
+# include <stdlib.h>
+# include <cmath>
+# include <ctime>
+# include <sstream>
+# include <iostream>
+# include <cstdlib>
+# include <unistd.h>  
+# include <dirent.h>  
+# include <sys/stat.h>  
+# define PI 3.1415926
+int const MAX_STR_LEN = 200;  
+
+# include "complex.h"
+# include "dif_fft.h"
+# include "find_dtmf_symbol.h"
+
+using namespace std;
+
+// FFT Algorithm
+int main()
+{
+	char dir_name[100] = "./txtData1/"; 
+
+    struct dirent * filename;    // return value for readdir()  
+    DIR * dir;                   // return value for opendir()  
+    dir = opendir( dir_name );  
+    /* read all the files in the dir ~ */  
+    while( ( filename = readdir(dir) ) != NULL )  
+    {  
+        // get rid of "." and ".."  
+        if( strcmp( filename->d_name , "." ) == 0 ||   
+            strcmp( filename->d_name , "..") == 0 )  
+            continue;  
+        cout << filename ->d_name <<endl;  
+    
+    	char hhh[MAX_STR_LEN];
+    	strcpy(hhh, dir_name);
+    	strcat(hhh, (filename->d_name));
+		ifstream in( hhh );
+		string filename;
+		string line;
+		
+		if(in) // 有该文件  
+		{
+			double audio[60000];
+			int count = 0;
+			while (getline (in, line)) // line中不包括每行的换行符
+			{
+				// audio[count] = atof(const_cast<const char *>(line.c_str()));
+
+				double d;
+				stringstream ss(line);
+				ss >> d;
+				audio[count] = d;
+
+				count = count + 1;
+				// cout << audio[count-1] << endl;
+			}
+
+			// is 2^k or not, if not add zero
+			int add_zero_count = 0;
+			for (int i = 1; i < 100; ++i)
+			{
+				if ( pow(2,i) < count ) {
+					continue;
+				} else if ( pow(2,i) == count ) {
+					break;
+				} else {
+					add_zero_count = pow(2,i) - count;
+					break;
+				}
+			}
+
+			// add value to input_seq[]
+			int total_length = count + add_zero_count;
+			complex* input_seq = new complex[total_length];
+			for (int i = 0; i < count; i++)
+			{
+				input_seq[i].re = audio[i];
+				input_seq[i].im = 0;
+			}
+			for (int i = 0; i < add_zero_count; i++)
+			{
+				input_seq[count + i].re = 0;
+				input_seq[count + i].im = 0;
+			}
+
+			// FFT
+			complex* output_seq = DIF_FFT_reordered(input_seq, total_length);
+
+			// Amp, Find max 1,2 and their positions
+			int amp;
+			int max1 = 0;
+			int max2 = 0;
+			int max1_pos = 0;
+			int max2_pos = 0;
+			for (int i = 0; i < total_length/2; ++i)
+			{
+				amp = pow(output_seq[i].re,2) + pow(output_seq[i].im,2);
+				if (amp > max2)
+				{
+					if (amp > max1) {
+						// max2 = max1
+						max2 = max1;
+						max2_pos = max1_pos;
+						// max1 = new
+						max1 = amp;
+						max1_pos = i;
+					} else {
+						max2 = amp;
+						max2_pos = i;
+					}
+				}
+			}
+
+			// x-axis
+				// 0:f_s/(N-1):f_s
+			int fs = 8000;
+			int N = total_length;
+			double step = double(fs)/(N-1);
+			double* x_axis = new double[N];
+			for (int i = 0; i < N; ++i)
+			{
+				x_axis[i] = i * step;
+			}
+
+			// Get max1, max2 freq
+			cout << "Max1 pos:" << x_axis[max1_pos] << endl;
+			cout << "Max2 pos:" << x_axis[max2_pos] << endl;
+
+			// decipher
+			char output_symbol = find_dtmf_symbol(x_axis[max1_pos], x_axis[max2_pos]);
+			cout << "The symbol for this sound: " << output_symbol << endl;
+
+			cout << endl;
+
+		} else { // fail reading file
+			cout << "no such file" << endl;
+		}
+    }  
+	return 0;
+}
+\end{lstlisting}
+
+\subsection{DTMF\_2.cpp --- Main function for problem 2}\label{dtmf2}
+\begin{lstlisting}
+// Work by Lin, Tzu-Heng
+// W42, 2014011054
+// Dept. of Electronic Engineering, Tsinghua University
+// DSP Course Work
+
+# include <fstream>
+# include <string>
+# include <stdio.h>
+# include <stdlib.h>
+# include <cmath>
+# include <ctime>
+# include <sstream>
+# include <iostream>
+# include <cstdlib>
+# include <unistd.h>  
+# include <dirent.h>  
+# include <sys/stat.h>  
+# define PI 3.1415926
+int const MAX_STR_LEN = 200;  
+
+# include "complex.h"
+# include "goertzel.h"
+# include "find_dtmf_symbol.h"
+
+using namespace std;
+
+// Goertzel Algorithm
+int main()
+{
+	cout << "Running Prob2, using Goertzel Algorithm ... " << endl << endl;
+
+	char dir_name[100] = "./txtData1/"; 
+
+    struct dirent * filename;    // return value for readdir()  
+    DIR * dir;                   // return value for opendir()  
+    dir = opendir( dir_name );  
+    /* read all the files in the dir ~ */  
+    while( ( filename = readdir(dir) ) != NULL )  
+    {  
+        // get rid of "." and ".."  
+        if( strcmp( filename->d_name , "." ) == 0 ||   
+            strcmp( filename->d_name , "..") == 0 )  
+            continue;  
+        cout << filename ->d_name <<endl;  
+    
+    	char hhh[MAX_STR_LEN];
+    	strcpy(hhh, dir_name);
+    	strcat(hhh, (filename->d_name));
+		ifstream in( hhh );
+		string filename;
+		string line;
+		
+		if(in) // 有该文件  
+		{
+			double audio[60000];
+			int count = 0;
+			while (getline (in, line)) // line中不包括每行的换行符
+			{
+				// audio[count] = atof(const_cast<const char *>(line.c_str()));
+
+				double d;
+				stringstream ss(line);
+				ss >> d;
+				audio[count] = d;
+
+				count = count + 1;
+				// cout << audio[count-1] << endl;
+			}
+
+			// is 2^k or not, if not add zero
+			int add_zero_count = 0;
+			for (int i = 1; i < 100; ++i)
+			{
+				if ( pow(2,i) < count ) {
+					continue;
+				} else if ( pow(2,i) == count ) {
+					break;
+				} else {
+					add_zero_count = pow(2,i) - count;
+					break;
+				}
+			}
+
+			// add value to input_seq[]
+			int total_length = count + add_zero_count;
+			complex* input_seq = new complex[total_length];
+			for (int i = 0; i < count; i++)
+			{
+				input_seq[i].re = audio[i];
+				input_seq[i].im = 0;
+			}
+			for (int i = 0; i < add_zero_count; i++)
+			{
+				input_seq[count + i].re = 0;
+				input_seq[count + i].im = 0;
+			}
+
+			// Goertzel, return amp^2
+			double* targeted_amp = Goertzel(input_seq, total_length);
+
+			// Amp, Find max 1,2 and their positions
+			int amp;
+			int max1 = 0;
+			int max2 = 0;
+			int max1_pos = 0;
+			int max2_pos = 0;
+			for (int i = 0; i < 8; ++i)
+			{
+				amp = targeted_amp[i];
+				if (amp > max2)
+				{
+					if (amp > max1) {
+						// max2 = max1
+						max2 = max1;
+						max2_pos = max1_pos;
+						// max1 = new
+						max1 = amp;
+						max1_pos = i;
+					} else {
+						max2 = amp;
+						max2_pos = i;
+					}
+				}
+			}
+
+			// Get max1, max2 freq
+			double x_axis[] = 				 		{697,
+											  		 770,
+											  		 852,
+											  		 941,
+								1209,1336,1477,1633};
+
+			cout << "Max1 pos:" << x_axis[max1_pos] << endl;
+			cout << "Max2 pos:" << x_axis[max2_pos] << endl;
+
+			// decipher
+			char output_symbol = find_dtmf_symbol(x_axis[max1_pos], x_axis[max2_pos]);
+			cout << "The symbol for this sound: " << output_symbol << endl;
+
+			cout << endl;
+
+		} else { // fail reading file
+			cout << "no such file" << endl;
+		}
+
+    }  
+	return 0;
+}
+\end{lstlisting}
+
+\subsection{DTMF\_3.cpp --- Main function for problem 3}\label{dtmf3}
+\begin{lstlisting}
+// Work by Lin, Tzu-Heng
+// W42, 2014011054
+// Dept. of Electronic Engineering, Tsinghua University
+// DSP Course Work
+
+# include <fstream>
+# include <string>
+# include <stdio.h>
+# include <stdlib.h>
+# include <cmath>
+# include <ctime>
+# include <sstream>
+# include <iostream>
+# include <cstdlib>
+# include <unistd.h>  
+# include <dirent.h>  
+# include <sys/stat.h>  
+# define PI 3.1415926
+int const MAX_STR_LEN = 200;  
+
+# include "complex.h"
+# include "goertzel.h"
+# include "find_dtmf_symbol.h"
+
+using namespace std;
+
+// Goertzel Algorithm to identify 3
+int main()
+{
+
+		cout << "Identifying Prob3, a long audio, using Goertzel Algorithm ..." << endl << endl;
+
+		ifstream in("./txtData2/data.txt");
+		string filename;
+		string line;
+		
+		if(in) // 有该文件  
+		{
+			double audio[60000];
+			int count = 0;
+			while (getline (in, line)) // line中不包括每行的换行符
+			{
+				// audio[count] = atof(const_cast<const char *>(line.c_str()));
+
+				double d;
+				stringstream ss(line);
+				ss >> d;
+				audio[count] = d;
+
+				count = count + 1;
+				// cout << audio[count-1] << endl;
+			}
+
+			// Stops (in seconds)
+			double stops[] = 	{0.4459, 0.6633,
+							     0.8642, 1.072,
+							     1.27,   1.473,
+							     1.7,    1.89,
+							     2.09,   2.29,
+							     2.5,    2.722,
+							     2.915,  3.1,
+							     3.34,   3.549,
+							     3.782,  4,
+							     4.182,  4.398, 
+							     4.581,  4.794,
+							     5.013,  5.222, 
+							     5.431,  5.641, 
+							     5.869,  6.059, 
+							     6.258,  6.447};
+
+		    int len_data2 = count;
+			double seconds_len_data2 = len_data2/8000.0;
+
+			for (int d = 0; d < 15; ++d)
+			{
+
+				int start_index = stops[d*2]/seconds_len_data2*len_data2;
+				int end_index = stops[d*2+1]/seconds_len_data2*len_data2;
+
+				// Get this audio
+				count = end_index - start_index + 1;
+				double* this_audio = new double[count];
+				for (int i = 0; i < count; ++i)
+				{
+					this_audio[i] = audio[i+start_index];
+				}
+
+				// is 2^k or not, if not add zero
+				int add_zero_count = 0;
+				for (int i = 1; i < 100; ++i)
+				{
+					if ( pow(2,i) < count ) {
+						continue;
+					} else if ( pow(2,i) == count ) {
+						break;
+					} else {
+						add_zero_count = pow(2,i) - count;
+						break;
+					}
+				}
+
+				// add value to input_seq[]
+				int total_length = count + add_zero_count;
+				complex* input_seq = new complex[total_length];
+				for (int i = 0; i < count; i++)
+				{
+					input_seq[i].re = this_audio[i];
+					input_seq[i].im = 0;
+				}
+				for (int i = 0; i < add_zero_count; i++)
+				{
+					input_seq[count + i].re = 0;
+					input_seq[count + i].im = 0;
+				}
+
+				// Goertzel, return amp^2
+				double* targeted_amp = Goertzel(input_seq, total_length);
+
+				// amp indicator
+				// for (int ii = 0; ii < 8; ++ii)
+				// {
+				// 	cout << targeted_amp[ii] << endl;
+				// }
+
+				// Amp, Find max 1,2 and their positions
+				int amp;
+				int max1 = 0;
+				int max2 = 0;
+				int max1_pos = 0;
+				int max2_pos = 0;
+				for (int i = 0; i < 8; ++i)
+				{
+					amp = targeted_amp[i];
+					if (amp > max2)
+					{
+						if (amp > max1) {
+							// max2 = max1
+							max2 = max1;
+							max2_pos = max1_pos;
+							// max1 = new
+							max1 = amp;
+							max1_pos = i;
+						} else {
+							max2 = amp;
+							max2_pos = i;
+						}
+					}
+				}
+
+				// Get max1, max2 freq
+				double x_axis[] = 				 		{697,
+												  		 770,
+												  		 852,
+												  		 941,
+									1209,1336,1477,1633};
+
+				cout << "Max1 pos:" << x_axis[max1_pos] << endl;
+				cout << "Max2 pos:" << x_axis[max2_pos] << endl;
+
+				// decipher
+				char output_symbol = find_dtmf_symbol(x_axis[max1_pos], x_axis[max2_pos]);
+				cout << "The symbol for this sound: " << output_symbol << endl;
+
+				cout << endl;
+
+			}
+
+		} else { // fail reading file
+			cout << "no such file" << endl;
+		}
+	
+
+	return 0;
+}
+\end{lstlisting}
+
+
+\subsection{complex.h}\label{code:complex}
+\begin{lstlisting}
+// Work by Lin, Tzu-Heng
+// W42, 2014011054
+// Dept. of Electronic Engineering, Tsinghua University
+// DSP Course Work
+
+/********************************************************************/
+// Complex Struct & Some Basic func
+
+
+using namespace std;
+
+typedef struct Complex
+{
+	double re;
+	double im;
+	Complex() {
+		re = 0;
+		im = 0;
+	};
+	Complex(double a,double b) {
+		re = a;
+		im = b;
+	};
+} complex;
+
+
+complex* append_seq(complex seq_1[], complex seq_2[], int N);
+complex* reorder_seq(complex input_seq[], int N);
+complex* Calc_WN(int N);
+int reverse_bit(int value, int N);
+
+// Multiplier
+complex ComplexMul(complex c1, complex c2)
+{
+	complex r;
+	
+	r.re = c1.re*c2.re - c1.im*c2.im;
+	r.im = c1.re*c2.im + c1.im*c2.re;
+
+	return r;
+}
+
+// Adder
+complex ComplexAdd(complex c1, complex c2)
+{
+	complex r;
+	
+	r.re = c1.re + c2.re;
+	r.im = c1.im + c2.im;
+	
+	return r;
+}
+
+// -c
+complex ReverseComplex(complex c)
+{
+	c.re = -c.re;
+	c.im = -c.im;
+	
+	return c;
+}
+
+// scalar mul
+complex ComplexScalarMul(complex cc, double con)
+{
+	complex r;
+	
+	r.re = cc.re * con;
+	r.im = cc.im * con;
+
+	return r;
+}
+
+// Other func
+
+
+/********************************************************************/
+// Append [seq_1] & [seq_2] to [seq_1,seq_2]
+complex* append_seq(complex seq_1[], complex seq_2[], int N) {
+	complex* total_seq = new complex[N*2];
+	for (int i = 0; i < N; i++) {
+		total_seq[i] = seq_1[i];
+	}
+	for (int i = N; i < 2*N; i++) {
+		total_seq[i] = seq_2[i-N];
+	}
+	return total_seq;
+}
+
+
+/********************************************************************/
+// Reorder the input_seq to an order
+complex* reorder_seq(complex input_seq[], int N) {
+
+	cout << "Reorder the sequence ..." << endl;
+
+	complex* reordered_seq = new complex[N];
+	for (int i = 0; i < N; ++i)
+	{
+		int k = reverse_bit(i, log2(N));
+		reordered_seq[k] = input_seq[i];
+	}
+
+	return reordered_seq;
+}
+
+
+/********************************************************************/
+// Reverse Bit
+	// input: 
+		// a decimal num, 
+		// N-based reverse method
+	// output: a decimal num
+int reverse_bit(int value, int N) {
+
+	int ret = 0;
+	int i = 0;
+
+	while (i < N) {
+		ret <<= 1;
+		ret |= (value>>i) & 1;
+		i++;
+	}
+
+	return ret;
+}
+
+
+/********************************************************************/
+// Calc WN[], with N = input_N
+complex* Calc_WN(int N) {
+
+	cout << "Calculating WN[] of N = " << N << " ..." << endl;
+	complex* WN = new complex[N];
+
+	complex WN_unit; WN_unit.re = cos(2*PI/N); WN_unit.im = -sin(2*PI/N);
+	WN[0].re=1; WN[0].im=0;
+
+	for (int i = 1; i < N; ++i)
+	{
+		WN[i] = ComplexMul(WN[i-1], WN_unit);
+	}
+
+	return WN;
+}
+\end{lstlisting}
+
+\subsection{dif\_fft.h --- FFT implementation}\label{code:fft}
+\begin{lstlisting}
+// Work by Lin, Tzu-Heng
+// W42, 2014011054
+// Dept. of Electronic Engineering, Tsinghua University
+// DSP Course Work
+
+complex* DIF_FFT_reordered(complex input_seq[], int N);
+complex* DIF_FFT(complex input_seq[], int N, complex WN[], int recur_time_count);
+
+/********************************************************************/
+// DIF-FFT
+	// input_seq[]: 
+	// N: size of input_seq
+		// Must be a 2^k integer
+complex* DIF_FFT_reordered(complex input_seq[], int N) {
+	
+	// Initialize
+	complex* reordered_seq = new complex[N];
+	
+	// Calc WN
+	complex* WN = new complex[N];
+	WN = Calc_WN(N);
+
+	// Calc DIF-FFT
+	reordered_seq = DIF_FFT(input_seq, N, WN, 0);
+	// Reorder
+	reordered_seq = reorder_seq(reordered_seq, N);
+
+	return reordered_seq;
+}
+complex* DIF_FFT(complex input_seq[], int N, complex WN[], int recur_time_count) {
+
+	// cout << "\tDIF_FFT executed!\n"; // for validation
+	// output seq
+	complex* return_seq = new complex[N];
+
+	if ( N != 2 ) {
+
+		complex* first_half_seq = new complex[N/2];
+		complex* second_half_seq = new complex[N/2];
+
+		int k = pow(2,recur_time_count);
+
+		// Calc
+		for (int i = 0; i < N/2; ++i) {
+			first_half_seq[i] = ComplexAdd(input_seq[i], input_seq[i+N/2]) ;
+		}
+		for (int i = 0; i < N/2; ++i) {
+			second_half_seq[i] = ComplexMul( ComplexAdd(input_seq[i], ReverseComplex(input_seq[i+N/2])), WN[i*k] ) ;
+		}
+
+		// DFT
+		complex* DFTed_first_half_seq = new complex[N/2];
+		DFTed_first_half_seq = DIF_FFT(first_half_seq, N/2, WN, recur_time_count+1);
+		complex* DFTed_second_half_seq = new complex[N/2];
+		DFTed_second_half_seq = DIF_FFT(second_half_seq, N/2, WN, recur_time_count+1);
+
+		// Append [DFTed_first_half_seq] & [DFTed_second_half_seq]
+		return_seq = append_seq(DFTed_first_half_seq, DFTed_second_half_seq, N/2);
+		return return_seq;
+
+	} else if ( N == 2 ) { // Smallest Butterfly Unit
+
+		// cout << "\tDIF_FFT N==2 triggered!\n"; // for validation
+		return_seq[0] = ComplexAdd(input_seq[0], input_seq[1]);
+		return_seq[1] = ComplexMul( ComplexAdd(input_seq[0], ReverseComplex(input_seq[1])), WN[0] );
+		return return_seq;
+	
+	}
+
+	// return [return_seq] # unordered
+	return return_seq;
+}
+/********************************************************************/
+\end{lstlisting}
+
+
+\subsection{goertzel.h --- Goertzel implementation}\label{code:goertzel}
+\begin{lstlisting}
+// Work by Lin, Tzu-Heng
+// W42, 2014011054
+// Dept. of Electronic Engineering, Tsinghua University
+// DSP Course Work
+
+// input x[n], N
+// output: amp of the targeted 8 freq (freqs)
+
+double* Goertzel(complex input_seq[], int N) {
+
+	cout << "Calculating Goertzel ..." << endl;
+	// targeted freqs
+	double freqs[] = 				 		{697,
+									  		 770,
+									  		 852,
+									  		 941,
+						1209,1336,1477,1633};
+
+	// Calc WN
+	complex* WN = new complex[N];
+	WN = Calc_WN(N);
+
+	int sampling_rate = 8000;
+
+	// Calc DFT of targeted 8 freqs
+	complex targeted_X[8];
+	complex* v = new complex[N];
+
+	for (int i = 0; i < 8; ++i)
+	{	
+		int k = ( N * freqs[i] ) / sampling_rate;
+		double w_k = 2 * PI * k / N;
+
+		// init
+		v[0] = input_seq[0];
+		v[1] = ComplexAdd(input_seq[1], ComplexScalarMul(v[0], 2*cos(w_k)));
+
+		for (int j = 2; j < N; ++j)
+		{
+			v[j] = ComplexAdd(ComplexAdd(input_seq[j], ComplexScalarMul(v[j-1], 2*cos(w_k))), ReverseComplex(v[j-2]));
+		}
+
+		targeted_X[i] = ComplexAdd(v[N-1], ReverseComplex(ComplexMul(WN[k], v[N-2])));
+	}
+
+	// Calc amp
+	double* amp_targeted_X = new double[8];
+	for (int i = 0; i < 8; ++i)
+	{
+		amp_targeted_X[i] = pow(targeted_X[i].re,2) + pow(targeted_X[i].im,2);
+		// cout << amp_targeted_X[i] << endl; // indicator
+	}
+
+	return amp_targeted_X; 
+}
+\end{lstlisting}
+
+
+\subsection{find\_dtmf\_symbol.h --- judge signals}\label{code:finddtmf}
+\begin{lstlisting}
+// Work by Lin, Tzu-Heng
+// W42, 2014011054
+// Dept. of Electronic Engineering, Tsinghua University
+// DSP Course Work
+
+// Decipher
+char find_dtmf_symbol(double a, double b)
+{
+	char symbol[]	 =  {'1','2','3','A',
+						 '4','5','6','B',
+						 '7','8','9','C',
+						 '*','0','#','D'};
+	double freqs1[] = 				 		{697,
+									  		 770,
+									  		 852,
+									  		 941};
+	double freqs2[] = {1209,1336,1477,1633};
+
+	// switch if a > b, making sure a < b
+	if (a > b) {
+		int c = a;
+		a = b;
+		b = c;
+	}
+
+	// get a pos: x
+	int x = 100;
+	for (int i = 0; i < 4; ++i)
+	{
+		if ( abs(freqs1[i] - a) <= 10 )
+		{
+			x = i;
+			break;
+		}
+	}
+
+	// get b pos: y
+	int y = 100;
+	for (int i = 0; i < 4; ++i)
+	{
+		if ( abs(freqs2[i] - b) <= 10 )
+		{
+			y = i;
+			break;
+		}
+	}
+
+	if (x == 100 || y == 100)
+	{
+		char error_char = 'x';
+		return error_char;
+	}
+	// get return symbol
+	char return_symbol = symbol[ x*4 + y ];
+
+	return return_symbol;
+}
+\end{lstlisting}
+
+
+
+\subsection{read\_wav.m --- Convert .wav files to .txt}\label{code:readwav}
+\begin{lstlisting}
+// Work by Lin, Tzu-Heng
+// W42, 2014011054
+// Dept. of Electronic Engineering, Tsinghua University
+// DSP Course Work
+
+close all;clc;clear;
+
+%% Data1
+dirpath = './Data1/';
+writepath = './txtData1/';
+dat = dir( dirpath );
+for j = 1 : length( dat )
+    if( ~isequal( dat( j ).name, '.' ) &...
+        ~isequal( dat( j ).name, '..') )
+        datpath = [dirpath dat( j ).name];
+        [y, Fs] = audioread(datpath);
+        f = fopen([writepath dat( j ).name(1:8) '.txt'],'w');
+        fprintf(f, '%f\n', y);
+        fclose(f);
+    end
+end
+
+%% Data2
+datpath = './Data2/data.wav';
+[y, Fs] = audioread(datpath);
+f = fopen('./txtData2/data.txt','w');
+fprintf(f, '%f\n', y);
+fclose(f);
+\end{lstlisting}
+
